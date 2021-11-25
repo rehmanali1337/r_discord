@@ -540,6 +540,7 @@ class DiscordWebSocket:
             self.session_id = data['session_id']
             if not self._connection.is_bot:
                 self.analytics_token = data["analytics_token"]
+                # pass
             # pass back shard ID to ready handler
             data['__shard_id__'] = self.shard_id
             log.info('Shard ID %s has connected to Gateway: %s (Session ID: %s).',

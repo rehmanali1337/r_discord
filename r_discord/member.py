@@ -30,7 +30,7 @@ import itertools
 import sys
 from operator import attrgetter
 
-import discord.abc
+import r_discord.abc
 
 from . import utils
 from .errors import ClientException
@@ -40,6 +40,7 @@ from .permissions import Permissions
 from .enums import Status, try_enum
 from .colour import Colour
 from .object import Object
+
 
 class VoiceState:
     """Represents a Discord user's voice state.
@@ -101,7 +102,8 @@ class VoiceState:
         self.mute = data.get('mute', False)
         self.deaf = data.get('deaf', False)
         self.suppress = data.get('suppress', False)
-        self.requested_to_speak_at = utils.parse_time(data.get('request_to_speak_timestamp'))
+        self.requested_to_speak_at = utils.parse_time(
+            data.get('request_to_speak_timestamp'))
         self.channel = channel
 
     def __repr__(self):
@@ -114,6 +116,7 @@ class VoiceState:
             ('channel', self.channel)
         ]
         return '<%s %s>' % (self.__class__.__name__, ' '.join('%s=%r' % t for t in attrs))
+
 
 def flatten_user(cls):
     for attr, value in itertools.chain(BaseUser.__dict__.items(), User.__dict__.items()):
@@ -129,7 +132,8 @@ def flatten_user(cls):
         # slotted members are implemented as member_descriptors in Type.__dict__
         if not hasattr(value, '__annotations__'):
             getter = attrgetter('_user.' + attr)
-            setattr(cls, attr, property(getter, doc='Equivalent to :attr:`User.%s`' % attr))
+            setattr(cls, attr, property(
+                getter, doc='Equivalent to :attr:`User.%s`' % attr))
         else:
             # Technically, this can also use attrgetter
             # However I'm not sure how I feel about "functions" returning properties
@@ -153,10 +157,12 @@ def flatten_user(cls):
 
     return cls
 
-_BaseUser = discord.abc.User
+
+_BaseUser = r_discord.abc.User
+
 
 @flatten_user
-class Member(discord.abc.Messageable, _BaseUser):
+class Member(r_discord.abc.Messageable, _BaseUser):
     """Represents a Discord member to a :class:`Guild`.
 
     This implements a lot of the functionality of :class:`User`.
@@ -221,7 +227,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         self._client_status = {
             None: 'offline'
         }
-        self.activities = tuple(map(create_activity, data.get('activities', [])))
+        self.activities = tuple(
+            map(create_activity, data.get('activities', [])))
         self.nick = data.get('nick', None)
         self.pending = data.get('pending', False)
 
@@ -230,7 +237,8 @@ class Member(discord.abc.Messageable, _BaseUser):
 
     def __repr__(self):
         return '<Member id={1.id} name={1.name!r} discriminator={1.discriminator!r}' \
-               ' bot={1.bot} nick={0.nick!r} guild={0.guild!r}>'.format(self, self._user)
+               ' bot={1.bot} nick={0.nick!r} guild={0.guild!r}>'.format(
+                   self, self._user)
 
     def __eq__(self, other):
         return isinstance(other, _BaseUser) and other.id == self.id
@@ -278,7 +286,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
     @classmethod
     def _copy(cls, member):
-        self = cls.__new__(cls) # to bypass __init__
+        self = cls.__new__(cls)  # to bypass __init__
 
         self._roles = utils.SnowflakeList(member._roles, is_sorted=True)
         self.joined_at = member.joined_at
@@ -319,7 +327,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         self._update_roles(data)
 
     def _presence_update(self, data, user):
-        self.activities = tuple(map(create_activity, data.get('activities', [])))
+        self.activities = tuple(
+            map(create_activity, data.get('activities', [])))
         self._client_status = {
             sys.intern(key): sys.intern(value)
             for key, value in data.get('client_status', {}).items()
@@ -334,7 +343,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         u = self._user
         original = (u.name, u.avatar, u.discriminator, u._public_flags)
         # These keys seem to always be available
-        modified = (user['username'], user['avatar'], user['discriminator'], user.get('public_flags', 0))
+        modified = (user['username'], user['avatar'],
+                    user['discriminator'], user.get('public_flags', 0))
         if original != modified:
             to_return = User._copy(self._user)
             u.name, u.avatar, u.discriminator, u._public_flags = modified
@@ -387,7 +397,7 @@ class Member(discord.abc.Messageable, _BaseUser):
         There is an alias for this named :attr:`color`.
         """
 
-        roles = self.roles[1:] # remove @everyone
+        roles = self.roles[1:]  # remove @everyone
 
         # highest order of the colour is the one that gets rendered.
         # if the highest is the default colour then the next one with a colour
@@ -660,7 +670,8 @@ class Member(discord.abc.Messageable, _BaseUser):
                 await http.edit_my_voice_state(guild_id, voice_state_payload)
             else:
                 if not suppress:
-                    voice_state_payload['request_to_speak_timestamp'] = datetime.datetime.utcnow().isoformat()
+                    voice_state_payload['request_to_speak_timestamp'] = datetime.datetime.utcnow(
+                    ).isoformat()
                 await http.edit_voice_state(guild_id, self.id, voice_state_payload)
 
         try:
@@ -767,7 +778,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         """
 
         if not atomic:
-            new_roles = utils._unique(Object(id=r.id) for s in (self.roles[1:], roles) for r in s)
+            new_roles = utils._unique(Object(id=r.id)
+                                      for s in (self.roles[1:], roles) for r in s)
             await self.edit(roles=new_roles, reason=reason)
         else:
             req = self._state.http.add_role
@@ -806,7 +818,8 @@ class Member(discord.abc.Messageable, _BaseUser):
         """
 
         if not atomic:
-            new_roles = [Object(id=r.id) for r in self.roles[1:]] # remove @everyone
+            new_roles = [Object(id=r.id)
+                         for r in self.roles[1:]]  # remove @everyone
             for role in roles:
                 try:
                     new_roles.remove(Object(id=role.id))

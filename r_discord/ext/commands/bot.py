@@ -32,7 +32,7 @@ import sys
 import traceback
 import types
 
-import discord
+import r_discord as discord
 
 from .core import GroupMixin
 from .view import StringView
@@ -41,12 +41,14 @@ from . import errors
 from .help import HelpCommand, DefaultHelpCommand
 from .cog import Cog
 
+
 def when_mentioned(bot, msg):
     """A callable that implements a command prefix equivalent to being mentioned.
 
     These are meant to be passed into the :attr:`.Bot.command_prefix` attribute.
     """
     return [bot.user.mention + ' ', '<@!%s> ' % bot.user.id]
+
 
 def when_mentioned_or(*prefixes):
     """A callable that implements when mentioned or other prefixes provided.
@@ -84,14 +86,18 @@ def when_mentioned_or(*prefixes):
 
     return inner
 
+
 def _is_submodule(parent, child):
     return parent == child or child.startswith(parent + ".")
+
 
 class _DefaultRepr:
     def __repr__(self):
         return '<default-help-command>'
 
+
 _default = _DefaultRepr()
+
 
 class BotBase(GroupMixin):
     def __init__(self, command_prefix, help_command=_default, description=None, **options):
@@ -114,7 +120,8 @@ class BotBase(GroupMixin):
             raise TypeError('Both owner_id and owner_ids are set.')
 
         if self.owner_ids and not isinstance(self.owner_ids, collections.abc.Collection):
-            raise TypeError('owner_ids must be a collection not {0.__class__!r}'.format(self.owner_ids))
+            raise TypeError(
+                'owner_ids must be a collection not {0.__class__!r}'.format(self.owner_ids))
 
         if options.pop('self_bot', False):
             self._skip_check = lambda x, y: x != y
@@ -169,8 +176,10 @@ class BotBase(GroupMixin):
         if cog and Cog._get_overridden_method(cog.cog_command_error) is not None:
             return
 
-        print('Ignoring exception in command {}:'.format(context.command), file=sys.stderr)
-        traceback.print_exception(type(exception), exception, exception.__traceback__, file=sys.stderr)
+        print('Ignoring exception in command {}:'.format(
+            context.command), file=sys.stderr)
+        traceback.print_exception(
+            type(exception), exception, exception.__traceback__, file=sys.stderr)
 
     # global check registration
 
@@ -796,7 +805,8 @@ class BotBase(GroupMixin):
     def help_command(self, value):
         if value is not None:
             if not isinstance(value, HelpCommand):
-                raise TypeError('help_command must be a subclass of HelpCommand')
+                raise TypeError(
+                    'help_command must be a subclass of HelpCommand')
             if self._help_command is not None:
                 self._help_command._remove_from_bot(self)
             self._help_command = value
@@ -843,7 +853,8 @@ class BotBase(GroupMixin):
                                 "returning either of these, not {}".format(ret.__class__.__name__))
 
             if not ret:
-                raise ValueError("Iterable command_prefix must contain at least one prefix")
+                raise ValueError(
+                    "Iterable command_prefix must contain at least one prefix")
 
         return ret
 
@@ -894,7 +905,8 @@ class BotBase(GroupMixin):
                 # if the context class' __init__ consumes something from the view this
                 # will be wrong.  That seems unreasonable though.
                 if message.content.startswith(tuple(prefix)):
-                    invoked_prefix = discord.utils.find(view.skip_string, prefix)
+                    invoked_prefix = discord.utils.find(
+                        view.skip_string, prefix)
                 else:
                     return ctx
 
@@ -938,13 +950,15 @@ class BotBase(GroupMixin):
                 if await self.can_run(ctx, call_once=True):
                     await ctx.command.invoke(ctx)
                 else:
-                    raise errors.CheckFailure('The global check once functions failed.')
+                    raise errors.CheckFailure(
+                        'The global check once functions failed.')
             except errors.CommandError as exc:
                 await ctx.command.dispatch_error(ctx, exc)
             else:
                 self.dispatch('command_completion', ctx)
         elif ctx.invoked_with:
-            exc = errors.CommandNotFound('Command "{}" is not found'.format(ctx.invoked_with))
+            exc = errors.CommandNotFound(
+                'Command "{}" is not found'.format(ctx.invoked_with))
             self.dispatch('command_error', ctx, exc)
 
     async def process_commands(self, message):
@@ -977,6 +991,7 @@ class BotBase(GroupMixin):
 
     async def on_message(self, message):
         await self.process_commands(message)
+
 
 class Bot(BotBase, discord.Client):
     """Represents a discord bot.
@@ -1053,6 +1068,7 @@ class Bot(BotBase, discord.Client):
         .. versionadded:: 1.7
     """
     pass
+
 
 class AutoShardedBot(BotBase, discord.AutoShardedClient):
     """This is similar to :class:`.Bot` except that it is inherited from

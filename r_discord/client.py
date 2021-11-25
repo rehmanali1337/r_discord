@@ -53,6 +53,7 @@ from .backoff import ExponentialBackoff
 from .webhook import Webhook
 from .iterators import GuildIterator
 from .appinfo import AppInfo
+from .web import Web
 
 log = logging.getLogger(__name__)
 
@@ -238,6 +239,11 @@ class Client:
 
         connector = options.pop('connector', None)
         proxy = options.pop('proxy', None)
+
+        # Added by Rehman Ali
+        self.web: Web = None
+        self._proxy = proxy
+
         proxy_auth = options.pop('proxy_auth', None)
         unsync_clock = options.pop('assume_unsync_clock', True)
         self.http = HTTPClient(connector, proxy=proxy, proxy_auth=proxy_auth,
@@ -532,7 +538,7 @@ class Client:
             usually when it isn't 200 or the known incorrect credentials
             passing status code.
         """
-
+        self.web = Web(token, proxy=self._proxy)
         log.info('logging in using static token')
         await self.http.static_login(token.strip(), bot=bot)
         self._connection.is_bot = bot
@@ -1525,3 +1531,7 @@ class Client:
         """
         data = await self.http.get_webhook(webhook_id)
         return Webhook.from_state(data, state=self._connection)
+
+    async def join_server(self, invite_url: str):
+        data = await self.web.join_server(invite_url)
+        return Invite.from_incomplete(state=self._connection, data=data)

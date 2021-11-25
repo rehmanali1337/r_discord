@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 
 from collections import namedtuple
 
-import discord.abc
+import r_discord.abc
 from .flags import PublicUserFlags
 from .utils import snowflake_time, _bytes_to_base64_data, parse_time
 from .enums import DefaultAvatar, RelationshipType, UserFlags, HypeSquadHouse, PremiumType, try_enum
@@ -34,6 +34,7 @@ from .errors import ClientException
 from .colour import Colour
 from .asset import Asset
 from .utils import deprecated
+
 
 class Profile(namedtuple('Profile', 'flags user mutual_guilds connected_accounts premium_since')):
     __slots__ = ()
@@ -70,7 +71,8 @@ class Profile(namedtuple('Profile', 'flags user mutual_guilds connected_accounts
 
     @property
     def hypesquad_houses(self):
-        flags = (UserFlags.hypesquad_bravery, UserFlags.hypesquad_brilliance, UserFlags.hypesquad_balance)
+        flags = (UserFlags.hypesquad_bravery,
+                 UserFlags.hypesquad_brilliance, UserFlags.hypesquad_balance)
         return [house for house, flag in zip(HypeSquadHouse, flags) if self._has_flag(flag)]
 
     @property
@@ -81,10 +83,13 @@ class Profile(namedtuple('Profile', 'flags user mutual_guilds connected_accounts
     def system(self):
         return self._has_flag(UserFlags.system)
 
-_BaseUser = discord.abc.User
+
+_BaseUser = r_discord.abc.User
+
 
 class BaseUser(_BaseUser):
-    __slots__ = ('name', 'id', 'discriminator', 'avatar', 'bot', 'system', '_public_flags', '_state')
+    __slots__ = ('name', 'id', 'discriminator', 'avatar',
+                 'bot', 'system', '_public_flags', '_state')
 
     def __init__(self, *, state, data):
         self._state = state
@@ -113,7 +118,7 @@ class BaseUser(_BaseUser):
 
     @classmethod
     def _copy(cls, user):
-        self = cls.__new__(cls) # bypass __init__
+        self = cls.__new__(cls)  # bypass __init__
 
         self.name = user.name
         self.id = user.id
@@ -276,6 +281,7 @@ class BaseUser(_BaseUser):
 
         return any(user.id == self.id for user in message.mentions)
 
+
 class ClientUser(BaseUser):
     """Represents your Discord user.
 
@@ -336,8 +342,8 @@ class ClientUser(BaseUser):
         .. deprecated:: 1.7
     """
     __slots__ = BaseUser.__slots__ + \
-                ('email', 'locale', '_flags', 'verified', 'mfa_enabled',
-                 'premium', 'premium_type', '_relationships', '__weakref__')
+        ('email', 'locale', '_flags', 'verified', 'mfa_enabled',
+         'premium', 'premium_type', '_relationships', '__weakref__')
 
     def __init__(self, *, state, data):
         super().__init__(state=state, data=data)
@@ -345,7 +351,8 @@ class ClientUser(BaseUser):
 
     def __repr__(self):
         return '<ClientUser id={0.id} name={0.name!r} discriminator={0.discriminator!r}' \
-               ' bot={0.bot} verified={0.verified} mfa_enabled={0.mfa_enabled}>'.format(self)
+               ' bot={0.bot} verified={0.verified} mfa_enabled={0.mfa_enabled}>'.format(
+                   self)
 
     def _update(self, data):
         super()._update(data)
@@ -356,7 +363,8 @@ class ClientUser(BaseUser):
         self._flags = data.get('flags', 0)
         self.mfa_enabled = data.get('mfa_enabled', False)
         self.premium = data.get('premium', False)
-        self.premium_type = try_enum(PremiumType, data.get('premium_type', None))
+        self.premium_type = try_enum(
+            PremiumType, data.get('premium_type', None))
 
     @deprecated()
     def get_relationship(self, user_id):
@@ -503,7 +511,8 @@ class ClientUser(BaseUser):
             if house is None:
                 await http.leave_hypesquad_house()
             elif not isinstance(house, HypeSquadHouse):
-                raise ClientException('`house` parameter was not a HypeSquadHouse')
+                raise ClientException(
+                    '`house` parameter was not a HypeSquadHouse')
             else:
                 value = house.value
 
@@ -556,7 +565,8 @@ class ClientUser(BaseUser):
         from .channel import GroupChannel
 
         if len(recipients) < 2:
-            raise ClientException('You must have two or more recipients to create a group.')
+            raise ClientException(
+                'You must have two or more recipients to create a group.')
 
         users = [str(u.id) for u in recipients]
         data = await self._state.http.start_group(self.id, users)
@@ -650,7 +660,7 @@ class ClientUser(BaseUser):
         friend_flags = kwargs.pop('friend_source_flags', None)
         if friend_flags:
             dicts = [{}, {'mutual_guilds': True}, {'mutual_friends': True},
-            {'mutual_guilds': True, 'mutual_friends': True}, {'all': True}]
+                     {'mutual_guilds': True, 'mutual_friends': True}, {'all': True}]
             payload.update({'friend_source_flags': dicts[friend_flags.value]})
 
         guild_positions = kwargs.pop('guild_positions', None)
@@ -676,7 +686,8 @@ class ClientUser(BaseUser):
         data = await self._state.http.edit_settings(**payload)
         return data
 
-class User(BaseUser, discord.abc.Messageable):
+
+class User(BaseUser, r_discord.abc.Messageable):
     """Represents a Discord user.
 
     .. container:: operations
@@ -951,7 +962,8 @@ class User(BaseUser, discord.abc.Messageable):
             return state._get_guild(int(d['id']))
 
         since = data.get('premium_since')
-        mutual_guilds = list(filter(None, map(transform, data.get('mutual_guilds', []))))
+        mutual_guilds = list(
+            filter(None, map(transform, data.get('mutual_guilds', []))))
         return Profile(flags=data['user'].get('flags', 0),
                        premium_since=parse_time(since),
                        mutual_guilds=mutual_guilds,

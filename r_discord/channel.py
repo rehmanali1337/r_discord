@@ -27,7 +27,7 @@ DEALINGS IN THE SOFTWARE.
 import time
 import asyncio
 
-import discord.abc
+import r_discord.abc
 from .permissions import Permissions
 from .enums import ChannelType, try_enum, VoiceRegion
 from .mixins import Hashable
@@ -46,11 +46,13 @@ __all__ = (
     '_channel_factory',
 )
 
+
 async def _single_delete_strategy(messages):
     for m in messages:
         await m.delete()
 
-class TextChannel(discord.abc.Messageable, discord.abc.GuildChannel, Hashable):
+
+class TextChannel(r_discord.abc.Messageable, r_discord.abc.GuildChannel, Hashable):
     """Represents a Discord guild text channel.
 
     .. container:: operations
@@ -142,7 +144,7 @@ class TextChannel(discord.abc.Messageable, discord.abc.GuildChannel, Hashable):
     def _sorting_bucket(self):
         return ChannelType.text.value
 
-    @utils.copy_doc(discord.abc.GuildChannel.permissions_for)
+    @utils.copy_doc(r_discord.abc.GuildChannel.permissions_for)
     def permissions_for(self, member):
         base = super().permissions_for(member)
 
@@ -240,7 +242,7 @@ class TextChannel(discord.abc.Messageable, discord.abc.GuildChannel, Hashable):
         """
         await self._edit(options, reason=reason)
 
-    @utils.copy_doc(discord.abc.GuildChannel.clone)
+    @utils.copy_doc(r_discord.abc.GuildChannel.clone)
     async def clone(self, *, name=None, reason=None):
         return await self._clone_impl({
             'topic': self.topic,
@@ -287,7 +289,7 @@ class TextChannel(discord.abc.Messageable, discord.abc.GuildChannel, Hashable):
             messages = list(messages)
 
         if len(messages) == 0:
-            return # do nothing
+            return  # do nothing
 
         if len(messages) == 1:
             message_id = messages[0].id
@@ -295,7 +297,8 @@ class TextChannel(discord.abc.Messageable, discord.abc.GuildChannel, Hashable):
             return
 
         if len(messages) > 100:
-            raise ClientException('Can only bulk delete messages up to 100 messages')
+            raise ClientException(
+                'Can only bulk delete messages up to 100 messages')
 
         message_ids = [m.id for m in messages]
         await self._state.http.delete_messages(self.id, message_ids)
@@ -363,13 +366,15 @@ class TextChannel(discord.abc.Messageable, discord.abc.GuildChannel, Hashable):
         """
 
         if check is None:
-            check = lambda m: True
+            def check(m): return True
 
-        iterator = self.history(limit=limit, before=before, after=after, oldest_first=oldest_first, around=around)
+        iterator = self.history(
+            limit=limit, before=before, after=after, oldest_first=oldest_first, around=around)
         ret = []
         count = 0
 
-        minimum_time = int((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
+        minimum_time = int((time.time() - 14 * 24 * 60 * 60)
+                           * 1000.0 - 1420070400000) << 22
         strategy = self.delete_messages if self._state.is_bot and bulk else _single_delete_strategy
 
         while True:
@@ -510,7 +515,8 @@ class TextChannel(discord.abc.Messageable, discord.abc.GuildChannel, Hashable):
             raise ClientException('The channel must be a news channel.')
 
         if not isinstance(destination, TextChannel):
-            raise InvalidArgument('Expected TextChannel received {0.__name__}'.format(type(destination)))
+            raise InvalidArgument(
+                'Expected TextChannel received {0.__name__}'.format(type(destination)))
 
         from .webhook import Webhook
         data = await self._state.http.follow_webhook(self.id, webhook_channel_id=destination.id, reason=reason)
@@ -538,7 +544,8 @@ class TextChannel(discord.abc.Messageable, discord.abc.GuildChannel, Hashable):
         from .message import PartialMessage
         return PartialMessage(channel=self, id=message_id)
 
-class VocalGuildChannel(discord.abc.Connectable, discord.abc.GuildChannel, Hashable):
+
+class VocalGuildChannel(r_discord.abc.Connectable, r_discord.abc.GuildChannel, Hashable):
     __slots__ = ('name', 'id', 'guild', 'bitrate', 'user_limit',
                  '_state', 'position', '_overwrites', 'category_id',
                  'rtc_region')
@@ -599,7 +606,7 @@ class VocalGuildChannel(discord.abc.Connectable, discord.abc.GuildChannel, Hasha
         """
         return {key: value for key, value in self.guild._voice_states.items() if value.channel.id == self.id}
 
-    @utils.copy_doc(discord.abc.GuildChannel.permissions_for)
+    @utils.copy_doc(r_discord.abc.GuildChannel.permissions_for)
     def permissions_for(self, member):
         base = super().permissions_for(member)
 
@@ -610,6 +617,7 @@ class VocalGuildChannel(discord.abc.Connectable, discord.abc.GuildChannel, Hasha
             denied.update(manage_channels=True, manage_roles=True)
             base.value &= ~denied.value
         return base
+
 
 class VoiceChannel(VocalGuildChannel):
     """Represents a Discord guild voice channel.
@@ -675,7 +683,7 @@ class VoiceChannel(VocalGuildChannel):
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.voice
 
-    @utils.copy_doc(discord.abc.GuildChannel.clone)
+    @utils.copy_doc(r_discord.abc.GuildChannel.clone)
     async def clone(self, *, name=None, reason=None):
         return await self._clone_impl({
             'bitrate': self.bitrate,
@@ -731,6 +739,7 @@ class VoiceChannel(VocalGuildChannel):
         """
 
         await self._edit(options, reason=reason)
+
 
 class StageChannel(VocalGuildChannel):
     """Represents a Discord guild stage channel.
@@ -807,7 +816,7 @@ class StageChannel(VocalGuildChannel):
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.stage_voice
 
-    @utils.copy_doc(discord.abc.GuildChannel.clone)
+    @utils.copy_doc(r_discord.abc.GuildChannel.clone)
     async def clone(self, *, name=None, reason=None):
         return await self._clone_impl({
             'topic': self.topic,
@@ -856,7 +865,8 @@ class StageChannel(VocalGuildChannel):
 
         await self._edit(options, reason=reason)
 
-class CategoryChannel(discord.abc.GuildChannel, Hashable):
+
+class CategoryChannel(r_discord.abc.GuildChannel, Hashable):
     """Represents a Discord channel category.
 
     These are useful to group channels to logical compartments.
@@ -892,7 +902,8 @@ class CategoryChannel(discord.abc.GuildChannel, Hashable):
         top category is position 0.
     """
 
-    __slots__ = ('name', 'id', 'guild', 'nsfw', '_state', 'position', '_overwrites', 'category_id')
+    __slots__ = ('name', 'id', 'guild', 'nsfw', '_state',
+                 'position', '_overwrites', 'category_id')
 
     def __init__(self, *, state, guild, data):
         self._state = state
@@ -923,7 +934,7 @@ class CategoryChannel(discord.abc.GuildChannel, Hashable):
         """:class:`bool`: Checks if the category is NSFW."""
         return self.nsfw
 
-    @utils.copy_doc(discord.abc.GuildChannel.clone)
+    @utils.copy_doc(r_discord.abc.GuildChannel.clone)
     async def clone(self, *, name=None, reason=None):
         return await self._clone_impl({
             'nsfw': self.nsfw
@@ -966,7 +977,7 @@ class CategoryChannel(discord.abc.GuildChannel, Hashable):
 
         await self._edit(options=options, reason=reason)
 
-    @utils.copy_doc(discord.abc.GuildChannel.move)
+    @utils.copy_doc(r_discord.abc.GuildChannel.move)
     async def move(self, **kwargs):
         kwargs.pop('category', None)
         await super().move(**kwargs)
@@ -988,8 +999,8 @@ class CategoryChannel(discord.abc.GuildChannel, Hashable):
     def text_channels(self):
         """List[:class:`TextChannel`]: Returns the text channels that are under this category."""
         ret = [c for c in self.guild.channels
-            if c.category_id == self.id
-            and isinstance(c, TextChannel)]
+               if c.category_id == self.id
+               and isinstance(c, TextChannel)]
         ret.sort(key=lambda c: (c.position, c.id))
         return ret
 
@@ -997,8 +1008,8 @@ class CategoryChannel(discord.abc.GuildChannel, Hashable):
     def voice_channels(self):
         """List[:class:`VoiceChannel`]: Returns the voice channels that are under this category."""
         ret = [c for c in self.guild.channels
-            if c.category_id == self.id
-            and isinstance(c, VoiceChannel)]
+               if c.category_id == self.id
+               and isinstance(c, VoiceChannel)]
         ret.sort(key=lambda c: (c.position, c.id))
         return ret
 
@@ -1009,8 +1020,8 @@ class CategoryChannel(discord.abc.GuildChannel, Hashable):
         .. versionadded:: 1.7
         """
         ret = [c for c in self.guild.channels
-            if c.category_id == self.id
-            and isinstance(c, StageChannel)]
+               if c.category_id == self.id
+               and isinstance(c, StageChannel)]
         ret.sort(key=lambda c: (c.position, c.id))
         return ret
 
@@ -1052,7 +1063,8 @@ class CategoryChannel(discord.abc.GuildChannel, Hashable):
         """
         return await self.guild.create_stage_channel(name, overwrites=overwrites, category=self, reason=reason, **options)
 
-class StoreChannel(discord.abc.GuildChannel, Hashable):
+
+class StoreChannel(r_discord.abc.GuildChannel, Hashable):
     """Represents a Discord guild store channel.
 
     .. container:: operations
@@ -1115,7 +1127,7 @@ class StoreChannel(discord.abc.GuildChannel, Hashable):
         """:class:`ChannelType`: The channel's Discord type."""
         return ChannelType.store
 
-    @utils.copy_doc(discord.abc.GuildChannel.permissions_for)
+    @utils.copy_doc(r_discord.abc.GuildChannel.permissions_for)
     def permissions_for(self, member):
         base = super().permissions_for(member)
 
@@ -1128,7 +1140,7 @@ class StoreChannel(discord.abc.GuildChannel, Hashable):
         """:class:`bool`: Checks if the channel is NSFW."""
         return self.nsfw
 
-    @utils.copy_doc(discord.abc.GuildChannel.clone)
+    @utils.copy_doc(r_discord.abc.GuildChannel.clone)
     async def clone(self, *, name=None, reason=None):
         return await self._clone_impl({
             'nsfw': self.nsfw
@@ -1176,7 +1188,8 @@ class StoreChannel(discord.abc.GuildChannel, Hashable):
         """
         await self._edit(options, reason=reason)
 
-class DMChannel(discord.abc.Messageable, Hashable):
+
+class DMChannel(r_discord.abc.Messageable, Hashable):
     """Represents a Discord direct message channel.
 
     .. container:: operations
@@ -1286,7 +1299,8 @@ class DMChannel(discord.abc.Messageable, Hashable):
         from .message import PartialMessage
         return PartialMessage(channel=self, id=message_id)
 
-class GroupChannel(discord.abc.Messageable, Hashable):
+
+class GroupChannel(r_discord.abc.Messageable, Hashable):
     """Represents a Discord group channel.
 
     .. container:: operations
@@ -1337,14 +1351,16 @@ class GroupChannel(discord.abc.Messageable, Hashable):
         self.name = data.get('name')
 
         try:
-            self.recipients = [self._state.store_user(u) for u in data['recipients']]
+            self.recipients = [self._state.store_user(
+                u) for u in data['recipients']]
         except KeyError:
             pass
 
         if owner_id == self.me.id:
             self.owner = self.me
         else:
-            self.owner = utils.find(lambda u: u.id == owner_id, self.recipients)
+            self.owner = utils.find(
+                lambda u: u.id == owner_id, self.recipients)
 
     async def _get_channel(self):
         return self
@@ -1546,6 +1562,7 @@ class GroupChannel(discord.abc.Messageable, Hashable):
         """
 
         await self._state.http.leave_group(self.id)
+
 
 def _channel_factory(channel_type):
     value = try_enum(ChannelType, channel_type)
