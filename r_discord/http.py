@@ -184,6 +184,7 @@ class HTTPClient:
             "connection": "keep-alive",
             "cookie": f'__cfduid={os.urandom(43).hex()}; __dcfduid={os.urandom(32).hex()}; locale=en-US',
             "DNT": "1",
+            'content-type': 'application/json',
             "origin": "https://discord.com",
             "sec-fetch-dest": "empty",
             "sec-fetch-mode": "cors",
@@ -280,6 +281,7 @@ class HTTPClient:
 
         kwargs['headers'] = headers
 
+        # Over-riding headers here
         kwargs['headers'] = new_headers
 
         # Proxy support
