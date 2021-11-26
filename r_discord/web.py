@@ -138,7 +138,7 @@ class Web:
         async with aiohttp.ClientSession(headers=headers) as session:
             async with session.request(method, url=url, data=payload, proxy=self._proxy) as response:
                 await response.read()
-                if response.status > 200 and response.status < 300:
+                if response.status >= 200 and response.status < 300:
                     return response
                 data = await json_or_text(response)
                 if response.status == 403:
@@ -157,3 +157,25 @@ class Web:
         headers = self._generate_headers(path=path, content_length="2")
         response = await self._make_request(path, headers, payload=json.dumps(payload))
         return await response.json()
+
+    async def bypass_tos(self, channel_id: str, guild_id: str, invite_code: str):
+        response = await self._get_tos(channel_id, guild_id, invite_code)
+        tos_details = await response.json()
+        await self._accept_tos(tos_details, channel_id, guild_id)
+
+    async def _get_tos(self, channel_id, guild_id, invite_code):
+        referer = f"{self._base_url}/channel/{guild_id}/{channel_id}"
+        path = f"/api/v9/guilds/{guild_id}/member-verification?with_guild=false&invite_code={invite_code}"
+        headers = self._generate_headers(
+            method='GET', path=path, referer=referer)
+        return await self._make_request(
+            path, headers, payload={}, method="GET")
+
+    async def _accept_tos(self, tos_details, channel_id, guild_id):
+        path = f"/api/v9/guilds/{guild_id}/requests/@me"
+        referer = f"{self._base_url}/channel/{guild_id}/{channel_id}"
+        tos_details.pop("description")
+        tos_details["form_fields"][0]["response"] = True
+        headers = self._generate_headers(
+            method='PUT', path=path, referer=referer)
+        return await self._make_request(path, headers, payload=json.dumps(tos_details), method='PUT')

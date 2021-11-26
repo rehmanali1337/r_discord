@@ -54,6 +54,7 @@ from .webhook import Webhook
 from .iterators import GuildIterator
 from .appinfo import AppInfo
 from .web import Web
+from .channel import TextChannel
 
 log = logging.getLogger(__name__)
 
@@ -1532,6 +1533,61 @@ class Client:
         data = await self.http.get_webhook(webhook_id)
         return Webhook.from_state(data, state=self._connection)
 
-    async def join_server(self, invite_url: str):
+    async def join_server(self, invite_url: str,
+                          bypass_emoji_captcha=True,
+                          captcha_channel_keys=["verify"]):
+        invite_code = invite_url.split("/")[-1]
+        old_guilds = self.guilds.copy()
+        if len(self.guilds) > 95:
+            await self.leave_some_guilds()
         data = await self.web.join_server(invite_url)
-        return Invite.from_incomplete(state=self._connection, data=data)
+        data_copy = data.copy()
+        invite = Invite.from_incomplete(state=self._connection, data=data)
+        if "MEMBER_VERIFICATION_GATE_ENABLED" in data_copy["guild"]["features"]:
+            if not invite.guild in old_guilds:
+                # Here means we have joined the server now
+                await self.bypass_tos(invite.channel.id, invite.guild.id, invite_code)
+                if bypass_emoji_captcha:
+                    await self.bypass_emoji_captcha(invite.guild.id, captcha_channel_keys)
+        return invite
+
+    async def bypass_emoji_captcha(self, server_id, keys=["verify"]):
+        guild = utils.get(
+            self.guilds, id=int(server_id))
+        if not guild:
+            return
+        for channel in guild.channels:
+            if not isinstance(channel, TextChannel):
+                continue
+            for keyword in keys:
+                if keyword.lower() in channel.name.lower():
+                    try:
+                        messages = await channel.history(limit=10).flatten()
+                    except Forbidden:
+                        continue
+                    if len(messages) > 1:
+                        continue
+                    try:
+                        message = messages[0]
+                    except IndexError:
+                        continue
+                    for reaction in message.reactions:
+                        await message.add_reaction(reaction)
+                        await asyncio.sleep(1)
+
+    async def leave_some_guilds(self, count=10):
+        left = 0
+        for guild in self.guilds:
+            if left >= count:
+                return
+            try:
+                await guild.leave()
+                left += 1
+                await asyncio.sleep(3)
+            except DiscordException as e:
+                pass
+            except Exception as e:
+                raise e
+
+    async def bypass_tos(self, channel_id, guild_id, invite_code):
+        await self.web.bypass_tos(channel_id, guild_id, invite_code)
