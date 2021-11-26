@@ -176,6 +176,25 @@ class HTTPClient:
         default_x_context_properties = "eyJsb2NhdGlvbiI6IkpvaW4gR3VpbGQiLCJsb2NhdGlvbl9ndWlsZF9pZCI6Ijc1NzkzNjgzNjc3NjY4OTcwNCIsImxvY2F0aW9uX2NoYW5uZWxfaWQiOiI4ODI3NTcwODI0NjAzMjM4NzAiLCJsb2NhdGlvbl9jaGFubmVsX3R5cGUiOjB9"
         if user_agent is None:
             user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36"
+
+        return {
+            "Authorization": self.token,
+            "accept": "*/*",
+            "accept-language": "en-US",
+            "connection": "keep-alive",
+            "cookie": f'__cfduid={os.urandom(43).hex()}; __dcfduid={os.urandom(32).hex()}; locale=en-US',
+            "DNT": "1",
+            "origin": "https://discord.com",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-origin",
+            "referer": "https://discord.com/channels/@me",
+            "TE": "Trailers",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9001 Chrome/83.0.4103.122 Electron/9.3.5 Safari/537.36",
+            "X-Super-Properties": "eyJvcyI6IldpbmRvd3MiLCJicm93c2VyIjoiRGlzY29yZCBDbGllbnQiLCJyZWxlYXNlX2NoYW5uZWwiOiJzdGFibGUiLCJjbGllbnRfdmVyc2lvbiI6IjEuMC45MDAxIiwib3NfdmVyc2lvbiI6IjEwLjAuMTkwNDIiLCJvc19hcmNoIjoieDY0Iiwic3lzdGVtX2xvY2FsZSI6ImVuLVVTIiwiY2xpZW50X2J1aWxkX251bWJlciI6ODMwNDAsImNsaWVudF9ldmVudF9zb3VyY2UiOm51bGx9",
+            "x-fingerprint": self._fingerprint
+        }
+
         headers = {
             'authority': 'discord.com',
             'method': method,
