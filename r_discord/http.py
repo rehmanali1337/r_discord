@@ -126,7 +126,7 @@ class HTTPClient:
 
         # Added to support web headers
         self._data_dir = "tokens_data"
-        self._data_file = f"{self._data_dir}/{self._token}"
+        self._data_file = f"{self._data_dir}/{self.token}"
         os.makedirs(self._data_dir, exist_ok=True)
         self._fingerprint = self._get_fingerprint()
         self._cookies = self._get_cookies()
