@@ -56,6 +56,7 @@ from .appinfo import AppInfo
 from .web import Web
 from .channel import TextChannel
 import typing
+from .message import Message
 
 log = logging.getLogger(__name__)
 
@@ -1550,8 +1551,8 @@ class Client:
                 await self.bypass_tos(invite.channel.id, invite.guild.id, invite_code)
                 if bypass_emoji_captcha:
                     await self.bypass_emoji_captcha(invite.guild.id, captcha_channel_keys)
-        await asyncio.sleep(3)
-        return await self.fetch_invite(invite_url)
+        # await asyncio.sleep(3)
+        return invite
 
     async def bypass_emoji_captcha(self, server_id, keys=["verify"]):
         guild = utils.get(
@@ -1593,3 +1594,9 @@ class Client:
 
     async def bypass_tos(self, channel_id, guild_id, invite_code):
         await self.web.bypass_tos(channel_id, guild_id, invite_code)
+
+    async def message_channel(self, channel_id, guild_id, message) -> str:
+        data = await self.web.send_message(guild_id, channel_id, message)
+        if 'id' in data.keys():
+            return f"https://discord.com/channels/{guild_id}/{channel_id}/{data['id']}"
+        return data

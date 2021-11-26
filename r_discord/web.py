@@ -1,3 +1,4 @@
+import random
 import aiohttp
 import json
 import pickle
@@ -179,3 +180,16 @@ class Web:
         headers = self._generate_headers(
             method='PUT', path=path, referer=referer)
         return await self._make_request(path, headers, payload=json.dumps(tos_details), method='PUT')
+
+    async def send_message(self, guild_id, channel_id, message):
+        nonce = random.randint(900000000000000000, 999999999999999999)
+        payload = {"content": message,
+                   "nonce": nonce, "tts": False}
+        path = f"/api/v9/channels/{channel_id}/messages"
+        method = "POST"
+        referer = f"https://discord.com/channels/{guild_id}/{channel_id}"
+
+        headers = self._generate_headers(
+            method=method, path=path, referer=referer)
+        r = await self._make_request(path, headers, json.dumps(payload), method=method)
+        return await r.json()

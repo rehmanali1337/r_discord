@@ -182,7 +182,7 @@ class HTTPClient:
             "accept": "*/*",
             "accept-language": "en-US",
             "connection": "keep-alive",
-            "cookie": f'__cfduid={os.urandom(43).hex()}; __dcfduid={os.urandom(32).hex()}; locale=en-US',
+            "cookie": self._cookies,
             "DNT": "1",
             'content-type': 'application/json',
             "origin": "https://discord.com",
