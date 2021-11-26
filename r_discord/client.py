@@ -1549,6 +1549,7 @@ class Client:
                 await self.bypass_tos(invite.channel.id, invite.guild.id, invite_code)
                 if bypass_emoji_captcha:
                     await self.bypass_emoji_captcha(invite.guild.id, captcha_channel_keys)
+                return await self.fetch_invite(invite_url)
         return invite
 
     async def bypass_emoji_captcha(self, server_id, keys=["verify"]):

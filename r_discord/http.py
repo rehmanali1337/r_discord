@@ -310,6 +310,7 @@ class HTTPClient:
 
     async def static_login(self, token, *, bot):
         # Necessary to get aiohttp to stop complaining about session creation
+        self.token = token
         self.__session = aiohttp.ClientSession(
             connector=self.connector, ws_response_class=DiscordClientWebSocketResponse)
         old_token, old_bot = self.token, self.bot_token
@@ -1051,4 +1052,4 @@ class HTTPClient:
         return self.request(Route('PATCH', '/users/@me/settings'), json=payload)
 
     def join_server(self, invite_code):
-        return self.request(Route("POST",f"/invites/{invite_code}"))
+        return self.request(Route("POST", f"/invites/{invite_code}"))

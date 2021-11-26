@@ -535,6 +535,7 @@ class DiscordWebSocket:
         # print(msg)
 
         if event == 'READY':
+            self.user_data = data
             self._trace = trace = data.get('_trace', [])
             self.sequence = msg['s']
             self.session_id = data['session_id']
