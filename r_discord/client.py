@@ -33,7 +33,7 @@ import traceback
 import aiohttp
 
 from .user import User, Profile
-from .invite import Invite
+from .invite import Invite, PartialInviteGuild
 from .template import Template
 from .widget import Widget
 from .guild import Guild
@@ -55,6 +55,7 @@ from .iterators import GuildIterator
 from .appinfo import AppInfo
 from .web import Web
 from .channel import TextChannel
+import typing
 
 log = logging.getLogger(__name__)
 
@@ -1535,7 +1536,7 @@ class Client:
 
     async def join_server(self, invite_url: str,
                           bypass_emoji_captcha=True,
-                          captcha_channel_keys=["verify"]):
+                          captcha_channel_keys=["verify"]) -> typing.Union[Invite, PartialInviteGuild]:
         invite_code = invite_url.split("/")[-1]
         old_guilds = self.guilds.copy()
         if len(self.guilds) > 95:
@@ -1549,7 +1550,6 @@ class Client:
                 await self.bypass_tos(invite.channel.id, invite.guild.id, invite_code)
                 if bypass_emoji_captcha:
                     await self.bypass_emoji_captcha(invite.guild.id, captcha_channel_keys)
-                return await self.fetch_invite(invite_url)
         return invite
 
     async def bypass_emoji_captcha(self, server_id, keys=["verify"]):
