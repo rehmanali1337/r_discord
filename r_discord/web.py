@@ -8,50 +8,9 @@ from .errors import *
 from .http import json_or_text
 
 
-def get_headers(cookies: str,
-                token: str,
-                path,
-                referer: str = "https://discord.com/channels/@me",
-                method="POST",
-                user_agent=None,
-                content_length=None, ):
-    if user_agent is None:
-        user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
-    _headers = {
-        'authority': 'discord.com',
-        'method': method,
-        'path': path,
-        'scheme': 'https',
-        'accept': '*/*',
-        'accept-encoding': 'gzip, deflate',
-        'accept-language': 'en-US',
-        'authorization': token,
-        'content-length': str(content_length),
-        'content-type': 'application/json',
-        'cookie': cookies,
-        'origin': 'https://discord.com',
-        'referer': referer,
-        'sec-ch-ua': '";Not A Brand";v="99", "Chromium";v="94"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Linux"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'user-agent': user_agent,
-        # 'x-context-properties': default_x_context_properties,
-        # 'x-fingerprint': self._fingerprint,
-        'x-debug-options': 'bugReporterEnabled',
-        'x-super-properties': 'eyJvcyI6IkxpbnV4IiwiYnJvd3NlciI6IkNocm9tZSIsImRldmljZSI6IiIsInN5c3RlbV9sb2NhbGUiOiJlbi1VUyIsImJyb3dzZXJfdXNlcl9hZ2VudCI6Ik1vemlsbGEvNS4wIChYMTE7IExpbnV4IHg4Nl82NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzk0LjAuNDYwNi44MSBTYWZhcmkvNTM3LjM2IiwiYnJvd3Nlcl92ZXJzaW9uIjoiOTQuMC40NjA2LjgxIiwib3NfdmVyc2lvbiI6IiIsInJlZmVycmVyIjoiIiwicmVmZXJyaW5nX2RvbWFpbiI6IiIsInJlZmVycmVyX2N1cnJlbnQiOiIiLCJyZWZlcnJpbmdfZG9tYWluX2N1cnJlbnQiOiIiLCJyZWxlYXNlX2NoYW5uZWwiOiJzdGFibGUiLCJjbGllbnRfYnVpbGRfbnVtYmVyIjoxMDIxMTMsImNsaWVudF9ldmVudF9zb3VyY2UiOm51bGx9'
-    }
-    if content_length is None:
-        del _headers['content-length']
-
-    return _headers
-
-
 class Web:
     def __init__(self, token, proxy=None):
-        self._session: aiohttp.ClisntSession = None
+        self._session: aiohttp.ClientSession = None
         assert not token is None
         self._token = token
         self._base_url = 'https://discord.com'
@@ -193,3 +152,38 @@ class Web:
             method=method, path=path, referer=referer)
         r = await self._make_request(path, headers, json.dumps(payload), method=method)
         return await r.json()
+
+    async def resolve_invite(self, invite_url: str):
+        code = invite_url.split("/")[-1]
+        referer = f"https://discord.com/invite/{code}"
+        method = "GET"
+        path = f"/api/v9/invites/{code}?with_counts=true&with_expiration=true"
+        headers = self._generate_headers(method=method, path=path, )
+        headers["referer"] = referer
+        headers["authorization"] = "undefined"
+        cookies = "__dcfduid=d2ce6e202f1711eca2519feb80321749; __sdcfduid=d2ce6e212f1711eca2519feb8032174961c30b89cd31d1d337f35b6c6bb976e7e26d5024d0c59e7882f3fa392f79dc14; _ga=GA1.2.105267511.1636270904; OptanonConsent=isIABGlobal=false&datestamp=Mon+Nov+08+2021+16:18:05+GMT+0500+(Pakistan+Standard+Time)&version=6.17.0&hosts=&landingPath=NotLandingPage&groups=C0001:1,C0002:1,C0003:1&AwaitingReconsent=false"
+        headers["cookie"] = cookies
+        # print(headers)
+        r = await self._make_request(path, headers=headers, payload=dict(), method=method)
+        return await r.json()
+
+    async def iter_messages(self, guild_id: str, channel_id: str, limit=100):
+        path = f"/api/v9/channels/{channel_id}/messages?limit={limit}"
+        referer = f"https://discord.com/channels/{guild_id}/{channel_id}"
+        method = "GET"
+        headers = self._generate_headers(
+            method=method, path=path, referer=referer)
+        r = await self._make_request(path, headers=headers, payload=dict(), method=method)
+        messages = await r.json()
+        yield messages
+        if len(messages) < limit:
+            return
+        last_message_id = messages[-1]["id"]
+        while True:
+            path = f"/api/v9/channels/{channel_id}/messages?before={last_message_id}&limit={limit}"
+            r = await self._make_request(path, headers=headers, payload=dict(), method=method)
+            messages = await r.json()
+            yield messages
+            if len(messages) < limit:
+                return
+            last_message_id = messages[-1]["id"]

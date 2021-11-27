@@ -1545,6 +1545,7 @@ class Client:
         data = await self.web.join_server(invite_url)
         data_copy = data.copy()
         invite = Invite.from_incomplete(state=self._connection, data=data)
+        # invite = Invite.from_gateway(state=self._connection, data=data)
         if "MEMBER_VERIFICATION_GATE_ENABLED" in data_copy["guild"]["features"]:
             if not invite.guild in old_guilds:
                 # Here means we have joined the server now

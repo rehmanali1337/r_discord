@@ -41,11 +41,14 @@ from .file import File
 from .voice_client import VoiceClient, VoiceProtocol
 from . import utils
 
+
 class _Undefined:
     def __repr__(self):
         return 'see-below'
 
+
 _undefined = _Undefined()
+
 
 class Snowflake(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a Discord model.
@@ -81,6 +84,7 @@ class Snowflake(metaclass=abc.ABCMeta):
                     return NotImplemented
             return True
         return NotImplemented
+
 
 class User(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a Discord user.
@@ -134,6 +138,7 @@ class User(metaclass=abc.ABCMeta):
             return True
         return NotImplemented
 
+
 class PrivateChannel(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a private Discord channel.
 
@@ -164,6 +169,7 @@ class PrivateChannel(metaclass=abc.ABCMeta):
             return NotImplemented
         return NotImplemented
 
+
 class _Overwrites:
     __slots__ = ('id', 'allow', 'deny', 'type')
 
@@ -180,6 +186,7 @@ class _Overwrites:
             'deny': str(self.deny),
             'type': self.type,
         }
+
 
 class GuildChannel:
     """An ABC that details the common operations on a Discord guild channel.
@@ -218,7 +225,8 @@ class GuildChannel:
 
         http = self._state.http
         bucket = self._sorting_bucket
-        channels = [c for c in self.guild.channels if c._sorting_bucket == bucket]
+        channels = [
+            c for c in self.guild.channels if c._sorting_bucket == bucket]
 
         channels.sort(key=lambda c: c.position)
 
@@ -229,7 +237,8 @@ class GuildChannel:
             # not there somehow lol
             return
         else:
-            index = next((i for i, c in enumerate(channels) if c.position >= position), len(channels))
+            index = next((i for i, c in enumerate(channels)
+                         if c.position >= position), len(channels))
             # add ourselves at our designated position
             channels.insert(index, self)
 
@@ -237,7 +246,8 @@ class GuildChannel:
         for index, c in enumerate(channels):
             d = {'id': c.id, 'position': index}
             if parent_id is not _undefined and c.id == self.id:
-                d.update(parent_id=parent_id, lock_permissions=lock_permissions)
+                d.update(parent_id=parent_id,
+                         lock_permissions=lock_permissions)
             payload.append(d)
 
         await http.bulk_channel_update(self.guild.id, payload, reason=reason)
@@ -263,7 +273,8 @@ class GuildChannel:
         except KeyError:
             pass
         else:
-            options['rtc_region'] = None if rtc_region is None else str(rtc_region)
+            options['rtc_region'] = None if rtc_region is None else str(
+                rtc_region)
 
         lock_permissions = options.pop('sync_permissions', False)
 
@@ -273,13 +284,15 @@ class GuildChannel:
             if parent_id is not _undefined:
                 if lock_permissions:
                     category = self.guild.get_channel(parent_id)
-                    options['permission_overwrites'] = [c._asdict() for c in category._overwrites]
+                    options['permission_overwrites'] = [c._asdict()
+                                                        for c in category._overwrites]
                 options['parent_id'] = parent_id
             elif lock_permissions and self.category_id is not None:
                 # if we're syncing permissions on a pre-existing channel category without changing it
                 # we need to update the permissions to point to the pre-existing category
                 category = self.guild.get_channel(self.category_id)
-                options['permission_overwrites'] = [c._asdict() for c in category._overwrites]
+                options['permission_overwrites'] = [c._asdict()
+                                                    for c in category._overwrites]
         else:
             await self._move(position, parent_id=parent_id, lock_permissions=lock_permissions, reason=reason)
 
@@ -288,7 +301,8 @@ class GuildChannel:
             perms = []
             for target, perm in overwrites.items():
                 if not isinstance(perm, PermissionOverwrite):
-                    raise InvalidArgument('Expected PermissionOverwrite received {0.__name__}'.format(type(perm)))
+                    raise InvalidArgument(
+                        'Expected PermissionOverwrite received {0.__name__}'.format(type(perm)))
 
                 allow, deny = perm.pair()
                 payload = {
@@ -325,7 +339,8 @@ class GuildChannel:
 
         for index, overridden in enumerate(data.get('permission_overwrites', [])):
             overridden_id = int(overridden.pop('id'))
-            self._overwrites.append(_Overwrites(id=overridden_id, **overridden))
+            self._overwrites.append(_Overwrites(
+                id=overridden_id, **overridden))
 
             if overridden['type'] == 'member':
                 continue
@@ -385,11 +400,11 @@ class GuildChannel:
         """
 
         if isinstance(obj, User):
-            predicate = lambda p: p.type == 'member'
+            def predicate(p): return p.type == 'member'
         elif isinstance(obj, Role):
-            predicate = lambda p: p.type == 'role'
+            def predicate(p): return p.type == 'role'
         else:
-            predicate = lambda p: True
+            def predicate(p): return True
 
         for overwrite in filter(predicate, self._overwrites):
             if overwrite.id == obj.id:
@@ -510,7 +525,8 @@ class GuildChannel:
         try:
             maybe_everyone = self._overwrites[0]
             if maybe_everyone.id == self.guild.id:
-                base.handle_overwrite(allow=maybe_everyone.allow, deny=maybe_everyone.deny)
+                base.handle_overwrite(
+                    allow=maybe_everyone.allow, deny=maybe_everyone.deny)
                 remaining_overwrites = self._overwrites[1:]
             else:
                 remaining_overwrites = self._overwrites
@@ -531,7 +547,8 @@ class GuildChannel:
         # Apply member specific permission overwrites
         for overwrite in remaining_overwrites:
             if overwrite.type == 'member' and overwrite.id == member.id:
-                base.handle_overwrite(allow=overwrite.allow, deny=overwrite.deny)
+                base.handle_overwrite(
+                    allow=overwrite.allow, deny=overwrite.deny)
                 break
 
         # if you can't send a message in a channel then you can't have certain
@@ -645,7 +662,8 @@ class GuildChannel:
         elif isinstance(target, Role):
             perm_type = 'role'
         else:
-            raise InvalidArgument('target parameter must be either Member or Role')
+            raise InvalidArgument(
+                'target parameter must be either Member or Role')
 
         if isinstance(overwrite, _Undefined):
             if len(permissions) == 0:
@@ -653,10 +671,12 @@ class GuildChannel:
             try:
                 overwrite = PermissionOverwrite(**permissions)
             except (ValueError, TypeError):
-                raise InvalidArgument('Invalid permissions given to keyword arguments.')
+                raise InvalidArgument(
+                    'Invalid permissions given to keyword arguments.')
         else:
             if len(permissions) > 0:
-                raise InvalidArgument('Cannot mix overwrite and keyword arguments.')
+                raise InvalidArgument(
+                    'Cannot mix overwrite and keyword arguments.')
 
         # TODO: wait for event
 
@@ -782,7 +802,8 @@ class GuildChannel:
         before, after = kwargs.get('before'), kwargs.get('after')
         offset = kwargs.get('offset', 0)
         if sum(bool(a) for a in (beginning, end, before, after)) > 1:
-            raise InvalidArgument('Only one of [before, after, end, beginning] can be used.')
+            raise InvalidArgument(
+                'Only one of [before, after, end, beginning] can be used.')
 
         bucket = self._sorting_bucket
         parent_id = kwargs.get('category', ...)
@@ -817,25 +838,28 @@ class GuildChannel:
         elif end:
             index = len(channels)
         elif before:
-            index = next((i for i, c in enumerate(channels) if c.id == before.id), None)
+            index = next((i for i, c in enumerate(
+                channels) if c.id == before.id), None)
         elif after:
-            index = next((i + 1 for i, c in enumerate(channels) if c.id == after.id), None)
+            index = next((i + 1 for i, c in enumerate(channels)
+                         if c.id == after.id), None)
 
         if index is None:
-            raise InvalidArgument('Could not resolve appropriate move position')
+            raise InvalidArgument(
+                'Could not resolve appropriate move position')
 
         channels.insert(max((index + offset), 0), self)
         payload = []
         lock_permissions = kwargs.get('sync_permissions', False)
         reason = kwargs.get('reason')
         for index, channel in enumerate(channels):
-            d = { 'id': channel.id, 'position': index }
+            d = {'id': channel.id, 'position': index}
             if parent_id is not ... and channel.id == self.id:
-                d.update(parent_id=parent_id, lock_permissions=lock_permissions)
+                d.update(parent_id=parent_id,
+                         lock_permissions=lock_permissions)
             payload.append(d)
 
         await self._state.http.bulk_channel_update(self.guild.id, payload, reason=reason)
-
 
     async def create_invite(self, *, reason=None, **fields):
         """|coro|
@@ -911,6 +935,7 @@ class GuildChannel:
 
         return result
 
+
 class Messageable(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a model that can send messages.
 
@@ -931,9 +956,9 @@ class Messageable(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     async def send(self, content=None, *, tts=False, embed=None, file=None,
-                                          files=None, delete_after=None, nonce=None,
-                                          allowed_mentions=None, reference=None,
-                                          mention_author=None):
+                   files=None, delete_after=None, nonce=None,
+                   allowed_mentions=None, reference=None,
+                   mention_author=None):
         """|coro|
 
         Sends a message to the destination with the content given.
@@ -1018,7 +1043,8 @@ class Messageable(metaclass=abc.ABCMeta):
 
         if allowed_mentions is not None:
             if state.allowed_mentions is not None:
-                allowed_mentions = state.allowed_mentions.merge(allowed_mentions).to_dict()
+                allowed_mentions = state.allowed_mentions.merge(
+                    allowed_mentions).to_dict()
             else:
                 allowed_mentions = allowed_mentions.to_dict()
         else:
@@ -1032,10 +1058,12 @@ class Messageable(metaclass=abc.ABCMeta):
             try:
                 reference = reference.to_message_reference_dict()
             except AttributeError:
-                raise InvalidArgument('reference parameter must be Message or MessageReference') from None
+                raise InvalidArgument(
+                    'reference parameter must be Message or MessageReference') from None
 
         if file is not None and files is not None:
-            raise InvalidArgument('cannot pass both file and files parameter to send()')
+            raise InvalidArgument(
+                'cannot pass both file and files parameter to send()')
 
         if file is not None:
             if not isinstance(file, File):
@@ -1050,7 +1078,8 @@ class Messageable(metaclass=abc.ABCMeta):
 
         elif files is not None:
             if len(files) > 10:
-                raise InvalidArgument('files parameter must be a list of up to 10 elements')
+                raise InvalidArgument(
+                    'files parameter must be a list of up to 10 elements')
             elif not all(isinstance(file, File) for file in files):
                 raise InvalidArgument('files parameter must be a list of File')
 
@@ -1063,8 +1092,8 @@ class Messageable(metaclass=abc.ABCMeta):
                     f.close()
         else:
             data = await state.http.send_message(channel.id, content, tts=tts, embed=embed,
-                                                                      nonce=nonce, allowed_mentions=allowed_mentions,
-                                                                      message_reference=reference)
+                                                 nonce=nonce, allowed_mentions=allowed_mentions,
+                                                 message_reference=reference)
 
         ret = state.create_message(channel=channel, data=data)
         if delete_after is not None:
@@ -1216,6 +1245,7 @@ class Messageable(metaclass=abc.ABCMeta):
         """
         return HistoryIterator(self, limit=limit, before=before, after=after, around=around, oldest_first=oldest_first)
 
+
 class Connectable(metaclass=abc.ABCMeta):
     """An ABC that details the common operations on a channel that can
     connect to a voice server.
@@ -1277,7 +1307,8 @@ class Connectable(metaclass=abc.ABCMeta):
         voice = cls(client, self)
 
         if not isinstance(voice, VoiceProtocol):
-            raise TypeError('Type must meet VoiceProtocol abstract base class.')
+            raise TypeError(
+                'Type must meet VoiceProtocol abstract base class.')
 
         state._add_voice_client(key_id, voice)
 
@@ -1289,6 +1320,6 @@ class Connectable(metaclass=abc.ABCMeta):
             except Exception:
                 # we don't care if disconnect failed because connection failed
                 pass
-            raise # re-raise
+            raise  # re-raise
 
         return voice
